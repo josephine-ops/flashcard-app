@@ -34,7 +34,7 @@ export default function App() {
       .from("flashcards")
       .select("*")
       .eq("subject", subject);
-    if (!error) setCards(data);
+    if (!error) setCards(data.sort(() => Math.random() - 0.5));
     setLoading(false);
   }
 
