@@ -193,6 +193,7 @@ export default function App() {
 const styles = {
   page: {
     minHeight: "100vh",
+    width: "100%",
     background: "#0a0f1e",
     display: "flex",
     flexDirection: "column",
