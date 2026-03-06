@@ -8,7 +8,7 @@ const RATINGS = [
   { label: "Easy", value: "easy", color: "#22c55e", hover: "#16a34a", emoji: "😄" },
 ];
 
-const DIFFICULTIES = ["all", "easy", "medium", "hard"];
+const DIFFICULTIES = ["all", "Easy", "Medium", "Hard"];
 
 export default function App() {
   const [subjects, setSubjects] = useState([]);
