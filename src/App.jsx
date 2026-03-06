@@ -8,11 +8,14 @@ const RATINGS = [
   { label: "Easy", value: "easy", color: "#22c55e", hover: "#16a34a", emoji: "😄" },
 ];
 
+const DIFFICULTIES = ["all", "easy", "medium", "hard"];
+
 export default function App() {
   const [subjects, setSubjects] = useState([]);
   const [subject, setSubject] = useState(null);
   const [topics, setTopics] = useState([]);
   const [topic, setTopic] = useState(null);
+  const [difficulty, setDifficulty] = useState("all");
   const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -46,7 +49,7 @@ export default function App() {
     fetchTopics();
   }, [subject]);
 
-  async function fetchCards(selectedTopic) {
+  async function fetchCards(selectedTopic, selectedDifficulty) {
     setLoading(true);
     setDone(false);
     setCurrentIndex(0);
@@ -54,6 +57,7 @@ export default function App() {
     setScore({ forgot: 0, hard: 0, good: 0, easy: 0 });
     let query = supabase.from("flashcards").select("*").eq("subject", subject);
     if (selectedTopic !== "all") query = query.eq("topic", selectedTopic);
+    if (selectedDifficulty !== "all") query = query.eq("difficulty", selectedDifficulty);
     const { data, error } = await query;
     if (!error) setCards(data.sort(() => Math.random() - 0.5));
     setLoading(false);
@@ -114,18 +118,30 @@ export default function App() {
     return (
       <div style={styles.page}>
         <div style={styles.selectContainer}>
-          <button style={styles.backBtn} onClick={() => setSubject(null)}>← Back</button>
+          <button style={styles.backBtn} onClick={() => { setSubject(null); setDifficulty("all"); }}>← Back</button>
           <h1 style={styles.title}>{subject}</h1>
           <p style={styles.subtitle}>Choose a topic</p>
+
+          {/* Difficulty filter pills */}
+          <div style={styles.pillRow}>
+            {DIFFICULTIES.map((d) => (
+              <button key={d} style={{ ...styles.pill, ...(difficulty === d ? styles.pillActive : {}) }}
+                onClick={() => setDifficulty(d)}>
+                {d === "all" ? "All" : d.charAt(0).toUpperCase() + d.slice(1)}
+              </button>
+            ))}
+          </div>
+
           <div style={styles.topicList}>
-            <button style={styles.topicBtn} onClick={() => fetchCards("all").then(() => setTopic("all"))}
+            <button style={styles.topicBtn}
+              onClick={() => fetchCards("all", difficulty).then(() => setTopic("all"))}
               onMouseOver={e => e.currentTarget.style.borderColor = "#3b82f6"}
               onMouseOut={e => e.currentTarget.style.borderColor = "#1e293b"}>
               <span style={styles.topicLabel}>⚡ All Topics</span>
-              <span style={styles.topicCount}>{topics.length} topics</span>
             </button>
             {topics.map((t) => (
-              <button key={t} style={styles.topicBtn} onClick={() => fetchCards(t).then(() => setTopic(t))}
+              <button key={t} style={styles.topicBtn}
+                onClick={() => fetchCards(t, difficulty).then(() => setTopic(t))}
                 onMouseOver={e => e.currentTarget.style.borderColor = "#3b82f6"}
                 onMouseOut={e => e.currentTarget.style.borderColor = "#1e293b"}>
                 <span style={styles.topicLabel}>{t}</span>
@@ -143,7 +159,11 @@ export default function App() {
         <div style={styles.doneContainer}>
           <div style={styles.doneEmoji}>🎉</div>
           <h2 style={styles.doneTitle}>Session Complete!</h2>
-          <p style={styles.doneSubject}>{subject} · {topic === "all" ? "All Topics" : topic} · {cards.length} cards</p>
+          <p style={styles.doneSubject}>
+            {subject} · {topic === "all" ? "All Topics" : topic}
+            {difficulty !== "all" ? ` · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` : ""}
+            {" "}· {cards.length} cards
+          </p>
           <div style={styles.scoreGrid}>
             {RATINGS.map((r) => (
               <div key={r.value} style={{ ...styles.scoreCard, borderColor: r.color }}>
@@ -154,9 +174,9 @@ export default function App() {
             ))}
           </div>
           <div style={styles.btnRow}>
-            <button style={styles.againBtn} onClick={() => fetchCards(topic)}>Study Again</button>
+            <button style={styles.againBtn} onClick={() => fetchCards(topic, difficulty)}>Study Again</button>
             <button style={styles.switchBtn} onClick={() => setTopic(null)}>Change Topic</button>
-            <button style={styles.switchBtn} onClick={() => { setSubject(null); setTopic(null); }}>Change Subject</button>
+            <button style={styles.switchBtn} onClick={() => { setSubject(null); setTopic(null); setDifficulty("all"); }}>Change Subject</button>
           </div>
         </div>
       </div>
@@ -218,14 +238,16 @@ const styles = {
   selectContainer: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", maxWidth: 480, width: "100%", textAlign: "center" },
   logoMark: { fontSize: 48, marginBottom: 8 },
   title: { fontSize: 36, fontWeight: "bold", color: "#f8fafc", margin: "0 0 8px", letterSpacing: "-1px" },
-  subtitle: { color: "#64748b", fontSize: 15, marginBottom: 32 },
+  subtitle: { color: "#64748b", fontSize: 15, marginBottom: 16 },
+  pillRow: { display: "flex", gap: 8, marginBottom: 24 },
+  pill: { background: "#111827", border: "1px solid #1e293b", borderRadius: 20, padding: "6px 16px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
+  pillActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
   subjectGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%" },
   subjectBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 16, padding: "28px 20px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.2s ease", color: "white" },
   subjectLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
   topicList: { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
   topicBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left" },
   topicLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
-  topicCount: { fontSize: 12, color: "#475569", fontFamily: "sans-serif" },
   topBar: { width: "100%", maxWidth: 480, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0 12px", gap: 8 },
   backBtn: { background: "transparent", border: "none", color: "#475569", cursor: "pointer", fontSize: 14, fontFamily: "sans-serif", padding: "4px 0" },
   subjectTag: { color: "#94a3b8", fontFamily: "sans-serif", fontSize: 14, fontWeight: "600", letterSpacing: "0.05em", textTransform: "uppercase" },
