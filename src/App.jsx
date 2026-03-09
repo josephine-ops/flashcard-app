@@ -9,14 +9,16 @@ const RATINGS = [
 ];
 
 const DIFFICULTIES = ["all", "Easy", "Medium", "Hard"];
-
 const RATING_PRIORITY = { forgot: 0, hard: 1, good: 2, easy: 3 };
 
 export default function App() {
   const [subjects, setSubjects] = useState([]);
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [mixedMode, setMixedMode] = useState(false);
   const [subject, setSubject] = useState(null);
   const [topics, setTopics] = useState([]);
   const [topic, setTopic] = useState(null);
+  const [selectedTopics, setSelectedTopics] = useState([]);
   const [difficulty, setDifficulty] = useState("all");
   const [mode, setMode] = useState("random");
   const [cards, setCards] = useState([]);
@@ -39,10 +41,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!subject) return;
+    if (!subject && !mixedMode) return;
     async function fetchTopics() {
       setLoading(true);
-      const { data } = await supabase.from("flashcards").select("topic").eq("subject", subject);
+      const subjectsToFetch = mixedMode ? selectedSubjects : [subject];
+      const { data } = await supabase
+        .from("flashcards")
+        .select("topic, subject")
+        .in("subject", subjectsToFetch);
       if (data) {
         const unique = [...new Set(data.map((d) => d.topic).filter(Boolean))].sort();
         setTopics(unique);
@@ -50,7 +56,19 @@ export default function App() {
       setLoading(false);
     }
     fetchTopics();
-  }, [subject]);
+  }, [subject, mixedMode]);
+
+  function toggleSubject(s) {
+    setSelectedSubjects((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+  }
+
+  function toggleTopic(t) {
+    setSelectedTopics((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+    );
+  }
 
   async function fetchCards(selectedTopic, selectedDifficulty, selectedMode) {
     setLoading(true);
@@ -59,14 +77,22 @@ export default function App() {
     setFlipped(false);
     setScore({ forgot: 0, hard: 0, good: 0, easy: 0 });
 
-    let query = supabase.from("flashcards").select("*").eq("subject", subject);
-    if (selectedTopic !== "all") query = query.eq("topic", selectedTopic);
+    let query = supabase.from("flashcards").select("*");
+
+    if (mixedMode) {
+      query = query.in("subject", selectedSubjects);
+      if (selectedTopics.length > 0) query = query.in("topic", selectedTopics);
+    } else {
+      query = query.eq("subject", subject);
+      if (selectedTopic !== "all") query = query.eq("topic", selectedTopic);
+    }
+
     if (selectedDifficulty !== "all") query = query.eq("difficulty", selectedDifficulty);
+
     const { data, error } = await query;
 
     if (!error && data) {
       if (selectedMode === "spaced") {
-        // Fetch latest rating for each card
         const ids = data.map((c) => c.id);
         const { data: progressData } = await supabase
           .from("progress")
@@ -74,22 +100,16 @@ export default function App() {
           .in("flashcard_id", ids)
           .order("reviewed_at", { ascending: false });
 
-        // Build a map of cardId -> latest rating
         const latestRating = {};
         if (progressData) {
           for (const p of progressData) {
-            if (!latestRating[p.flashcard_id]) {
-              latestRating[p.flashcard_id] = p.rating;
-            }
+            if (!latestRating[p.flashcard_id]) latestRating[p.flashcard_id] = p.rating;
           }
         }
 
-        // Sort: forgot first, then hard, good, easy, then unseen
         const sorted = [...data].sort((a, b) => {
-          const rA = latestRating[a.id];
-          const rB = latestRating[b.id];
-          const pA = rA !== undefined ? RATING_PRIORITY[rA] : -1;
-          const pB = rB !== undefined ? RATING_PRIORITY[rB] : -1;
+          const pA = latestRating[a.id] !== undefined ? RATING_PRIORITY[latestRating[a.id]] : -1;
+          const pB = latestRating[b.id] !== undefined ? RATING_PRIORITY[latestRating[b.id]] : -1;
           return pA - pB;
         });
         setCards(sorted);
@@ -115,6 +135,16 @@ export default function App() {
     setSavingRating(false);
   }
 
+  function resetAll() {
+    setSubject(null);
+    setTopic(null);
+    setMixedMode(false);
+    setSelectedSubjects([]);
+    setSelectedTopics([]);
+    setDifficulty("all");
+    setMode("random");
+  }
+
   const card = cards[currentIndex];
   const remaining = cards.length - currentIndex;
   const totalReviewed = Object.values(score).reduce((a, b) => a + b, 0);
@@ -130,36 +160,61 @@ export default function App() {
     );
   }
 
-  if (!subject) {
+  // Subject screen
+  if (!subject && !mixedMode) {
     return (
       <div style={styles.page}>
         <div style={styles.selectContainer}>
           <div style={styles.logoMark}>⚡</div>
           <h1 style={styles.title}>FlashDeck</h1>
-          <p style={styles.subtitle}>Choose a subject to begin</p>
+          <p style={styles.subtitle}>
+            {selectedSubjects.length > 0 ? "Select subjects then start mixed session" : "Choose a subject or mix multiple"}
+          </p>
           <div style={styles.subjectGrid}>
-            {subjects.map((s) => (
-              <button key={s} style={styles.subjectBtn} onClick={() => setSubject(s)}
-                onMouseOver={e => e.currentTarget.style.transform = "translateY(-3px)"}
-                onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                <span style={styles.subjectLabel}>{s}</span>
-              </button>
-            ))}
+            {subjects.map((s) => {
+              const isSelected = selectedSubjects.includes(s);
+              return (
+                <button key={s}
+                  style={{ ...styles.subjectBtn, ...(isSelected ? styles.subjectBtnSelected : {}) }}
+                  onClick={() => toggleSubject(s)}
+                  onMouseOver={e => { if (!isSelected) e.currentTarget.style.transform = "translateY(-3px)"; }}
+                  onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                  {isSelected && <span style={styles.checkmark}>✓</span>}
+                  <span style={styles.subjectLabel}>{s}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {selectedSubjects.length === 1 && (
+            <button style={styles.startBtn} onClick={() => setSubject(selectedSubjects[0])}>
+              Study {selectedSubjects[0]} →
+            </button>
+          )}
+
+          {selectedSubjects.length > 1 && (
+            <button style={styles.mixedBtn} onClick={() => setMixedMode(true)}>
+              🔀 Start Mixed Session ({selectedSubjects.length} subjects)
+            </button>
+          )}
+
+          {selectedSubjects.length === 0 && (
+            <p style={styles.hintText}>Tap one subject to study it, or tap multiple to mix</p>
+          )}
         </div>
       </div>
     );
   }
 
-  if (!topic) {
+  // Mixed topic selection screen
+  if (mixedMode && !done && cards.length === 0) {
     return (
       <div style={styles.page}>
         <div style={styles.selectContainer}>
-          <button style={styles.backBtn} onClick={() => { setSubject(null); setDifficulty("all"); }}>← Back</button>
-          <h1 style={styles.title}>{subject}</h1>
-          <p style={styles.subtitle}>Choose a topic</p>
+          <button style={styles.backBtn} onClick={resetAll}>← Back</button>
+          <h1 style={styles.title}>Mixed Session</h1>
+          <p style={styles.subtitle}>{selectedSubjects.join(" · ")}</p>
 
-          {/* Difficulty pills */}
           <div style={styles.pillRow}>
             {DIFFICULTIES.map((d) => (
               <button key={d} style={{ ...styles.pill, ...(difficulty === d ? styles.pillActive : {}) }}
@@ -169,16 +224,73 @@ export default function App() {
             ))}
           </div>
 
-          {/* Mode toggle */}
           <div style={styles.modeRow}>
             <button style={{ ...styles.modeBtn, ...(mode === "random" ? styles.modeBtnActive : {}) }}
-              onClick={() => setMode("random")}>
-              🎲 Random
-            </button>
+              onClick={() => setMode("random")}>🎲 Random</button>
             <button style={{ ...styles.modeBtn, ...(mode === "spaced" ? styles.modeBtnActive : {}) }}
-              onClick={() => setMode("spaced")}>
-              🧠 Spaced Repetition
+              onClick={() => setMode("spaced")}>🧠 Spaced</button>
+          </div>
+
+          <p style={{ color: "#475569", fontSize: 13, fontFamily: "sans-serif", marginBottom: 12 }}>
+            {selectedTopics.length === 0 ? "Pick topics or start with all" : `${selectedTopics.length} topic(s) selected`}
+          </p>
+
+          <div style={styles.topicList}>
+            <button style={styles.topicBtn}
+              onClick={() => { setSelectedTopics([]); fetchCards(null, difficulty, mode).then(() => setTopic("all")); }}
+              onMouseOver={e => e.currentTarget.style.borderColor = "#3b82f6"}
+              onMouseOut={e => e.currentTarget.style.borderColor = "#1e293b"}>
+              <span style={styles.topicLabel}>⚡ All Topics</span>
             </button>
+            {topics.map((t) => {
+              const isSelected = selectedTopics.includes(t);
+              return (
+                <button key={t}
+                  style={{ ...styles.topicBtn, ...(isSelected ? styles.topicBtnSelected : {}) }}
+                  onClick={() => toggleTopic(t)}
+                  onMouseOver={e => e.currentTarget.style.borderColor = "#3b82f6"}
+                  onMouseOut={e => e.currentTarget.style.borderColor = isSelected ? "#3b82f6" : "#1e293b"}>
+                  <span style={styles.topicLabel}>{t}</span>
+                  {isSelected && <span style={{ color: "#60a5fa", fontSize: 16 }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedTopics.length > 0 && (
+            <button style={styles.mixedBtn}
+              onClick={() => fetchCards(null, difficulty, mode).then(() => setTopic("mixed"))}>
+              🔀 Start with {selectedTopics.length} topic(s)
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Single subject topic screen
+  if (!topic) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.selectContainer}>
+          <button style={styles.backBtn} onClick={resetAll}>← Back</button>
+          <h1 style={styles.title}>{subject}</h1>
+          <p style={styles.subtitle}>Choose a topic</p>
+
+          <div style={styles.pillRow}>
+            {DIFFICULTIES.map((d) => (
+              <button key={d} style={{ ...styles.pill, ...(difficulty === d ? styles.pillActive : {}) }}
+                onClick={() => setDifficulty(d)}>
+                {d === "all" ? "All" : d}
+              </button>
+            ))}
+          </div>
+
+          <div style={styles.modeRow}>
+            <button style={{ ...styles.modeBtn, ...(mode === "random" ? styles.modeBtnActive : {}) }}
+              onClick={() => setMode("random")}>🎲 Random</button>
+            <button style={{ ...styles.modeBtn, ...(mode === "spaced" ? styles.modeBtnActive : {}) }}
+              onClick={() => setMode("spaced")}>🧠 Spaced</button>
           </div>
 
           <div style={styles.topicList}>
@@ -209,9 +321,8 @@ export default function App() {
           <div style={styles.doneEmoji}>🎉</div>
           <h2 style={styles.doneTitle}>Session Complete!</h2>
           <p style={styles.doneSubject}>
-            {subject} · {topic === "all" ? "All Topics" : topic}
-            {difficulty !== "all" ? ` · ${difficulty}` : ""}
-            {" "}· {cards.length} cards
+            {mixedMode ? selectedSubjects.join(" · ") : subject}
+            {" · "}{cards.length} cards
           </p>
           <div style={styles.scoreGrid}>
             {RATINGS.map((r) => (
@@ -224,8 +335,7 @@ export default function App() {
           </div>
           <div style={styles.btnRow}>
             <button style={styles.againBtn} onClick={() => fetchCards(topic, difficulty, mode)}>Study Again</button>
-            <button style={styles.switchBtn} onClick={() => setTopic(null)}>Change Topic</button>
-            <button style={styles.switchBtn} onClick={() => { setSubject(null); setTopic(null); setDifficulty("all"); }}>Change Subject</button>
+            <button style={styles.switchBtn} onClick={resetAll}>Start Over</button>
           </div>
         </div>
       </div>
@@ -235,8 +345,10 @@ export default function App() {
   return (
     <div style={styles.page}>
       <div style={styles.topBar}>
-        <button style={styles.backBtn} onClick={() => setTopic(null)}>← Back</button>
-        <span style={styles.subjectTag}>{topic === "all" ? subject : topic}</span>
+        <button style={styles.backBtn} onClick={resetAll}>← Back</button>
+        <span style={styles.subjectTag}>
+          {mixedMode ? "Mixed" : (topic === "all" ? subject : topic)}
+        </span>
         <div style={styles.topStats}>
           <span style={styles.statChip}>{remaining} left</span>
           <span style={{ ...styles.statChip, background: "#1e3a5f", color: "#60a5fa" }}>{totalReviewed} done</span>
@@ -288,17 +400,23 @@ const styles = {
   logoMark: { fontSize: 48, marginBottom: 8 },
   title: { fontSize: 36, fontWeight: "bold", color: "#f8fafc", margin: "0 0 8px", letterSpacing: "-1px" },
   subtitle: { color: "#64748b", fontSize: 15, marginBottom: 16 },
+  hintText: { color: "#334155", fontSize: 13, fontFamily: "sans-serif", marginTop: 16 },
   pillRow: { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", justifyContent: "center" },
   pill: { background: "#111827", border: "1px solid #1e293b", borderRadius: 20, padding: "6px 16px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
   pillActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
   modeRow: { display: "flex", gap: 8, marginBottom: 24, width: "100%" },
   modeBtn: { flex: 1, background: "#111827", border: "1px solid #1e293b", borderRadius: 12, padding: "10px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
   modeBtnActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
-  subjectGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%" },
-  subjectBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 16, padding: "28px 20px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.2s ease", color: "white" },
+  subjectGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", marginBottom: 16 },
+  subjectBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 16, padding: "28px 20px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.2s ease, border-color 0.2s", color: "white", position: "relative" },
+  subjectBtnSelected: { border: "1px solid #3b82f6", background: "#1a2744" },
+  checkmark: { position: "absolute", top: 10, right: 14, color: "#60a5fa", fontSize: 14, fontWeight: "bold" },
   subjectLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
-  topicList: { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
+  startBtn: { width: "100%", background: "#3b82f6", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", marginTop: 8 },
+  mixedBtn: { width: "100%", background: "#5b21b6", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", marginTop: 8 },
+  topicList: { display: "flex", flexDirection: "column", gap: 10, width: "100%", marginBottom: 16 },
   topicBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left" },
+  topicBtnSelected: { border: "1px solid #3b82f6", background: "#1a2744" },
   topicLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
   topBar: { width: "100%", maxWidth: 480, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0 12px", gap: 8 },
   backBtn: { background: "transparent", border: "none", color: "#475569", cursor: "pointer", fontSize: 14, fontFamily: "sans-serif", padding: "4px 0" },
