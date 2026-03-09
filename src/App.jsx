@@ -10,12 +10,15 @@ const RATINGS = [
 
 const DIFFICULTIES = ["all", "Easy", "Medium", "Hard"];
 
+const RATING_PRIORITY = { forgot: 0, hard: 1, good: 2, easy: 3 };
+
 export default function App() {
   const [subjects, setSubjects] = useState([]);
   const [subject, setSubject] = useState(null);
   const [topics, setTopics] = useState([]);
   const [topic, setTopic] = useState(null);
   const [difficulty, setDifficulty] = useState("all");
+  const [mode, setMode] = useState("random");
   const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -49,17 +52,51 @@ export default function App() {
     fetchTopics();
   }, [subject]);
 
-  async function fetchCards(selectedTopic, selectedDifficulty) {
+  async function fetchCards(selectedTopic, selectedDifficulty, selectedMode) {
     setLoading(true);
     setDone(false);
     setCurrentIndex(0);
     setFlipped(false);
     setScore({ forgot: 0, hard: 0, good: 0, easy: 0 });
+
     let query = supabase.from("flashcards").select("*").eq("subject", subject);
     if (selectedTopic !== "all") query = query.eq("topic", selectedTopic);
     if (selectedDifficulty !== "all") query = query.eq("difficulty", selectedDifficulty);
     const { data, error } = await query;
-    if (!error) setCards(data.sort(() => Math.random() - 0.5));
+
+    if (!error && data) {
+      if (selectedMode === "spaced") {
+        // Fetch latest rating for each card
+        const ids = data.map((c) => c.id);
+        const { data: progressData } = await supabase
+          .from("progress")
+          .select("flashcard_id, rating, reviewed_at")
+          .in("flashcard_id", ids)
+          .order("reviewed_at", { ascending: false });
+
+        // Build a map of cardId -> latest rating
+        const latestRating = {};
+        if (progressData) {
+          for (const p of progressData) {
+            if (!latestRating[p.flashcard_id]) {
+              latestRating[p.flashcard_id] = p.rating;
+            }
+          }
+        }
+
+        // Sort: forgot first, then hard, good, easy, then unseen
+        const sorted = [...data].sort((a, b) => {
+          const rA = latestRating[a.id];
+          const rB = latestRating[b.id];
+          const pA = rA !== undefined ? RATING_PRIORITY[rA] : -1;
+          const pB = rB !== undefined ? RATING_PRIORITY[rB] : -1;
+          return pA - pB;
+        });
+        setCards(sorted);
+      } else {
+        setCards(data.sort(() => Math.random() - 0.5));
+      }
+    }
     setLoading(false);
   }
 
@@ -122,26 +159,38 @@ export default function App() {
           <h1 style={styles.title}>{subject}</h1>
           <p style={styles.subtitle}>Choose a topic</p>
 
-          {/* Difficulty filter pills */}
+          {/* Difficulty pills */}
           <div style={styles.pillRow}>
             {DIFFICULTIES.map((d) => (
               <button key={d} style={{ ...styles.pill, ...(difficulty === d ? styles.pillActive : {}) }}
                 onClick={() => setDifficulty(d)}>
-                {d === "all" ? "All" : d.charAt(0).toUpperCase() + d.slice(1)}
+                {d === "all" ? "All" : d}
               </button>
             ))}
           </div>
 
+          {/* Mode toggle */}
+          <div style={styles.modeRow}>
+            <button style={{ ...styles.modeBtn, ...(mode === "random" ? styles.modeBtnActive : {}) }}
+              onClick={() => setMode("random")}>
+              🎲 Random
+            </button>
+            <button style={{ ...styles.modeBtn, ...(mode === "spaced" ? styles.modeBtnActive : {}) }}
+              onClick={() => setMode("spaced")}>
+              🧠 Spaced Repetition
+            </button>
+          </div>
+
           <div style={styles.topicList}>
             <button style={styles.topicBtn}
-              onClick={() => fetchCards("all", difficulty).then(() => setTopic("all"))}
+              onClick={() => fetchCards("all", difficulty, mode).then(() => setTopic("all"))}
               onMouseOver={e => e.currentTarget.style.borderColor = "#3b82f6"}
               onMouseOut={e => e.currentTarget.style.borderColor = "#1e293b"}>
               <span style={styles.topicLabel}>⚡ All Topics</span>
             </button>
             {topics.map((t) => (
               <button key={t} style={styles.topicBtn}
-                onClick={() => fetchCards(t, difficulty).then(() => setTopic(t))}
+                onClick={() => fetchCards(t, difficulty, mode).then(() => setTopic(t))}
                 onMouseOver={e => e.currentTarget.style.borderColor = "#3b82f6"}
                 onMouseOut={e => e.currentTarget.style.borderColor = "#1e293b"}>
                 <span style={styles.topicLabel}>{t}</span>
@@ -161,7 +210,7 @@ export default function App() {
           <h2 style={styles.doneTitle}>Session Complete!</h2>
           <p style={styles.doneSubject}>
             {subject} · {topic === "all" ? "All Topics" : topic}
-            {difficulty !== "all" ? ` · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` : ""}
+            {difficulty !== "all" ? ` · ${difficulty}` : ""}
             {" "}· {cards.length} cards
           </p>
           <div style={styles.scoreGrid}>
@@ -174,7 +223,7 @@ export default function App() {
             ))}
           </div>
           <div style={styles.btnRow}>
-            <button style={styles.againBtn} onClick={() => fetchCards(topic, difficulty)}>Study Again</button>
+            <button style={styles.againBtn} onClick={() => fetchCards(topic, difficulty, mode)}>Study Again</button>
             <button style={styles.switchBtn} onClick={() => setTopic(null)}>Change Topic</button>
             <button style={styles.switchBtn} onClick={() => { setSubject(null); setTopic(null); setDifficulty("all"); }}>Change Subject</button>
           </div>
@@ -239,9 +288,12 @@ const styles = {
   logoMark: { fontSize: 48, marginBottom: 8 },
   title: { fontSize: 36, fontWeight: "bold", color: "#f8fafc", margin: "0 0 8px", letterSpacing: "-1px" },
   subtitle: { color: "#64748b", fontSize: 15, marginBottom: 16 },
-  pillRow: { display: "flex", gap: 8, marginBottom: 24 },
+  pillRow: { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", justifyContent: "center" },
   pill: { background: "#111827", border: "1px solid #1e293b", borderRadius: 20, padding: "6px 16px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
   pillActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
+  modeRow: { display: "flex", gap: 8, marginBottom: 24, width: "100%" },
+  modeBtn: { flex: 1, background: "#111827", border: "1px solid #1e293b", borderRadius: 12, padding: "10px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
+  modeBtnActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
   subjectGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%" },
   subjectBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 16, padding: "28px 20px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.2s ease", color: "white" },
   subjectLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
