@@ -240,11 +240,10 @@ export default function App() {
         }
       }
       const now = new Date();
-      const neverStudied = allCards.filter((c) => !latestByCard[c.id]).length;
       const due = Object.values(latestByCard).filter(
         (p) => !p.next_review_at || new Date(p.next_review_at) <= now
       ).length;
-      setDueCount(neverStudied + due);
+      setDueCount(due);
 
       // Calculate study streak
       const { data: sessions } = await supabase
