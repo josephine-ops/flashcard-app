@@ -54,10 +54,12 @@ export default function CoachDashboard({ session, profile, onLogout }) {
   const [planTarget, setPlanTarget] = useState(20);
   const [planNoTarget, setPlanNoTarget] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
+  const [reports, setReports] = useState([]);
 
   // Fetch student list
   useEffect(() => {
     fetchStudents();
+    fetchReports();
   }, []);
 
   async function fetchStudents() {
@@ -224,6 +226,31 @@ export default function CoachDashboard({ session, profile, onLogout }) {
       fetchStudents();
     }
     setInviteLoading(false);
+  }
+
+  async function fetchReports() {
+    // Get all student IDs for this coach
+    const { data: links } = await supabase
+      .from("coach_students")
+      .select("student_id")
+      .eq("coach_id", session.user.id);
+    if (!links) return;
+    const studentIds = links.map((l) => l.student_id).filter(Boolean);
+    if (studentIds.length === 0) return;
+
+    // Use RPC to get reports since coach can't directly read them
+    const { data } = await supabase
+      .from("card_reports")
+      .select("*, flashcards:flashcard_id(question, answer, subject, topic)")
+      .in("user_id", studentIds)
+      .eq("resolved", false)
+      .order("created_at", { ascending: false });
+    setReports(data || []);
+  }
+
+  async function resolveReport(reportId) {
+    await supabase.from("card_reports").update({ resolved: true }).eq("id", reportId);
+    setReports((prev) => prev.filter((r) => r.id !== reportId));
   }
 
   async function saveStudentName() {
@@ -706,6 +733,34 @@ export default function CoachDashboard({ session, profile, onLogout }) {
             ))}
           </>
         )}
+
+        {reports.length > 0 && (
+          <>
+            <h2 style={styles.sectionTitle}>Reported Cards ({reports.length})</h2>
+            {reports.map((r) => (
+              <div key={r.id} style={styles.reportCard}>
+                <div style={styles.reportCardContent}>
+                  <span style={styles.reportSubject}>{r.flashcards?.subject} &gt; {r.flashcards?.topic}</span>
+                  <p style={styles.reportQuestion}>Q: {r.flashcards?.question}</p>
+                  <p style={styles.reportAnswer}>A: {r.flashcards?.answer}</p>
+                </div>
+                <div style={styles.reportActions}>
+                  <a
+                    href={`https://supabase.com/dashboard/project/snzgucatulndhysqznrp/editor/flashcards?filter=id%3Aeq%3A${r.flashcard_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.reportEditLink}
+                  >
+                    Edit in Supabase
+                  </a>
+                  <button style={styles.reportResolveBtn} onClick={() => resolveReport(r.id)}>
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
@@ -928,6 +983,36 @@ const styles = {
   addBtn: {
     background: COLORS.accent, color: "white", border: "none", borderRadius: 10,
     padding: "10px", fontSize: 13, fontWeight: "600", cursor: "pointer",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
+  },
+  reportCard: {
+    background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12,
+    padding: "14px 16px", marginBottom: 8, width: "100%", boxSizing: "border-box",
+  },
+  reportCardContent: {
+    display: "flex", flexDirection: "column", gap: 4, marginBottom: 10,
+  },
+  reportSubject: {
+    fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
+    fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em",
+  },
+  reportQuestion: {
+    fontSize: 13, color: COLORS.text, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", margin: 0,
+  },
+  reportAnswer: {
+    fontSize: 13, color: COLORS.textMuted, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", margin: 0,
+  },
+  reportActions: {
+    display: "flex", gap: 8,
+  },
+  reportEditLink: {
+    background: COLORS.accentBg, color: COLORS.accent, border: "none", borderRadius: 8,
+    padding: "6px 12px", fontSize: 12, fontWeight: "600", cursor: "pointer",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", textDecoration: "none",
+  },
+  reportResolveBtn: {
+    background: "transparent", border: `1px solid ${COLORS.border}`, borderRadius: 8,
+    color: COLORS.textDim, fontSize: 12, cursor: "pointer", padding: "6px 12px",
     fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
 };

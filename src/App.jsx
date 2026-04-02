@@ -30,6 +30,52 @@ function getNextInterval(currentInterval, rating) {
   return 1;
 }
 
+// Fuzzy answer matching
+function normalizeAnswer(str) {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/^(the|a|an)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .replace(/[.,;:!?'"()\-]/g, "");
+}
+
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function singularize(word) {
+  if (word.endsWith("ies")) return word.slice(0, -3) + "y";
+  if (word.endsWith("ves")) return word.slice(0, -3) + "f";
+  if (word.endsWith("ses") || word.endsWith("xes") || word.endsWith("zes") || word.endsWith("ches") || word.endsWith("shes")) return word.slice(0, -2);
+  if (word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
+  return word;
+}
+
+function answersMatch(userAnswer, correctAnswer) {
+  const ua = normalizeAnswer(userAnswer);
+  const ca = normalizeAnswer(correctAnswer);
+  if (ua === ca) return true;
+  // Singular/plural
+  if (singularize(ua) === singularize(ca)) return true;
+  // Fuzzy: allow edit distance based on length
+  const maxDist = ca.length <= 4 ? 1 : ca.length <= 8 ? 2 : 3;
+  if (editDistance(ua, ca) <= maxDist) return true;
+  if (editDistance(singularize(ua), singularize(ca)) <= maxDist) return true;
+  return false;
+}
+
 function FormatText({ text }) {
   if (!text) return null;
   const parts = text.split(/(\*[^*]+\*)/g);
@@ -96,6 +142,11 @@ export default function App() {
   const [streak, setStreak] = useState(0);
   const [lastRating, setLastRating] = useState(null); // { progressId, ratingValue }
   const [flaggedIds, setFlaggedIds] = useState(new Set());
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [fillResult, setFillResult] = useState(null); // null | "correct" | "wrong"
+  const [reportSent, setReportSent] = useState(false);
+  const [sessionPoints, setSessionPoints] = useState(0);
+  const [leaderboard, setLeaderboard] = useState([]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -369,6 +420,9 @@ export default function App() {
     setCurrentIndex(0);
     setFlipped(false);
     setScore({ forgot: 0, hard: 0, good: 0, easy: 0 });
+    setTypedAnswer("");
+    setFillResult(null);
+    setSessionPoints(0);
 
     let query = supabase.from("flashcards").select("*");
 
@@ -490,12 +544,37 @@ export default function App() {
           .eq("id", currentSessionId);
         setCurrentSessionId(null);
       }
+      // Fetch leaderboard
+      const { data: lb } = await supabase.rpc("get_leaderboard", { for_user_id: session.user.id });
+      if (lb) setLeaderboard(lb);
       setDone(true);
     } else {
       setFlipped(false);
+      setTypedAnswer("");
+      setFillResult(null);
+      setReportSent(false);
       setTimeout(() => setCurrentIndex((i) => i + 1), 150);
     }
     setSavingRating(false);
+  }
+
+  async function handleFillSubmit(e) {
+    e.preventDefault();
+    if (!typedAnswer.trim() || fillResult) return;
+    const card = cards[currentIndex];
+    const isCorrect = answersMatch(typedAnswer, card.answer);
+    setFillResult(isCorrect ? "correct" : "wrong");
+    if (isCorrect) {
+      await supabase.from("points").insert({ user_id: session.user.id, points: 5 });
+      setSessionPoints((prev) => prev + 5);
+    }
+  }
+
+  function handleFillNext(rating) {
+    setTypedAnswer("");
+    setFillResult(null);
+    // rating is null for wrong answers (auto-forgot), or a RATINGS object for correct self-rate
+    handleRating(rating || RATINGS[0]);
   }
 
   async function handleUndo() {
@@ -523,6 +602,8 @@ export default function App() {
     setCurrentIndex(0);
     setFlipped(false);
     setScore({ forgot: 0, hard: 0, good: 0, easy: 0 });
+    setTypedAnswer("");
+    setFillResult(null);
 
     const { data: flags } = await supabase
       .from("flagged_cards")
@@ -553,6 +634,16 @@ export default function App() {
     setLoading(false);
   }
 
+  async function reportCard() {
+    if (!card || reportSent) return;
+    await supabase.from("card_reports").insert({
+      flashcard_id: card.id,
+      user_id: session.user.id,
+      reason: "Student flagged as incorrect",
+    });
+    setReportSent(true);
+  }
+
   async function toggleFlag(cardId) {
     if (flaggedIds.has(cardId)) {
       await supabase.from("flagged_cards").delete()
@@ -581,20 +672,24 @@ export default function App() {
       // Only active during card study (topic is set, not done, cards loaded)
       if (!topic || done || cards.length === 0) return;
       if (savingRating) return;
+      // Don't intercept keys when typing in fill-in mode
+      if (mode === "fillin" && !fillResult) return;
 
-      if (e.key === " " || e.key === "Spacebar") {
-        e.preventDefault();
-        setFlipped((f) => !f);
-      } else if (flipped) {
-        if (e.key === "1") handleRating(RATINGS[0]); // Forgot
-        else if (e.key === "2") handleRating(RATINGS[1]); // Hard
-        else if (e.key === "3") handleRating(RATINGS[2]); // Good
-        else if (e.key === "4") handleRating(RATINGS[3]); // Easy
+      if (mode !== "fillin") {
+        if (e.key === " " || e.key === "Spacebar") {
+          e.preventDefault();
+          setFlipped((f) => !f);
+        } else if (flipped) {
+          if (e.key === "1") handleRating(RATINGS[0]);
+          else if (e.key === "2") handleRating(RATINGS[1]);
+          else if (e.key === "3") handleRating(RATINGS[2]);
+          else if (e.key === "4") handleRating(RATINGS[3]);
+        }
+        if (e.key === "z" && lastRating && !flipped) {
+          handleUndo();
+        }
       }
-      if (e.key === "z" && lastRating && !flipped) {
-        handleUndo();
-      }
-      if (e.key === "f" && cards[currentIndex]) {
+      if (e.key === "f" && mode !== "fillin" && cards[currentIndex]) {
         toggleFlag(cards[currentIndex].id);
       }
     }
@@ -817,6 +912,8 @@ export default function App() {
               onClick={() => setMode("random")}>🎲 Random</button>
             <button style={{ ...styles.modeBtn, ...(mode === "spaced" ? styles.modeBtnActive : {}) }}
               onClick={() => setMode("spaced")}>🧠 Spaced</button>
+            <button style={{ ...styles.modeBtn, ...(mode === "fillin" ? styles.modeBtnActive : {}) }}
+              onClick={() => setMode("fillin")}>✏️ Fill-in</button>
           </div>
 
           <p style={{ color: "#475569", fontSize: 13, fontFamily: "sans-serif", marginBottom: 12 }}>
@@ -883,6 +980,8 @@ export default function App() {
               onClick={() => setMode("random")}>🎲 Random</button>
             <button style={{ ...styles.modeBtn, ...(mode === "spaced" ? styles.modeBtnActive : {}) }}
               onClick={() => setMode("spaced")}>🧠 Spaced</button>
+            <button style={{ ...styles.modeBtn, ...(mode === "fillin" ? styles.modeBtnActive : {}) }}
+              onClick={() => setMode("fillin")}>✏️ Fill-in</button>
           </div>
 
           <div style={styles.topicList}>
@@ -935,6 +1034,31 @@ export default function App() {
               </div>
             ))}
           </div>
+          {sessionPoints > 0 && (
+            <div style={styles.pointsEarned}>
+              <span style={styles.pointsStar}>⭐</span>
+              <span style={styles.pointsNum}>+{sessionPoints} points</span>
+            </div>
+          )}
+          {leaderboard.length > 0 && (
+            <div style={styles.leaderboardSection}>
+              <h3 style={styles.leaderboardTitle}>Leaderboard</h3>
+              {leaderboard.map((entry, i) => {
+                const isMe = entry.user_id === session.user.id;
+                return (
+                  <div key={entry.user_id || i} style={{ ...styles.leaderboardRow, ...(isMe ? styles.leaderboardRowMe : {}) }}>
+                    <span style={styles.leaderboardRank}>
+                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                    </span>
+                    <span style={{ ...styles.leaderboardName, ...(isMe ? { fontWeight: "700" } : {}) }}>
+                      {entry.user_name}{isMe ? " (you)" : ""}
+                    </span>
+                    <span style={styles.leaderboardPts}>{entry.total_points} pts</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div style={styles.btnRow}>
             <button style={styles.againBtn} onClick={() => fetchCards(topic, difficulty, mode)}>Study Again</button>
             <button style={styles.switchBtn} onClick={backToTopics}>Change Topic</button>
@@ -954,11 +1078,21 @@ export default function App() {
         <div style={styles.topStats}>
           <span style={styles.statChip}>{remaining} left</span>
           <span style={{ ...styles.statChip, background: "#dcfce7", color: "#16a34a" }}>{totalReviewed} done</span>
+          {mode === "fillin" && sessionPoints > 0 && (
+            <span style={{ ...styles.statChip, background: "#fef3c7", color: "#b45309" }}>⭐ {sessionPoints}</span>
+          )}
           <button
             style={{ ...styles.flagBtn, color: card && flaggedIds.has(card.id) ? "#d97706" : "#b0a09f" }}
             onClick={(e) => { e.stopPropagation(); if (card) toggleFlag(card.id); }}
           >
             {card && flaggedIds.has(card.id) ? "★" : "☆"}
+          </button>
+          <button
+            style={{ ...styles.reportBtn, ...(reportSent ? styles.reportBtnSent : {}) }}
+            onClick={reportCard}
+            disabled={reportSent}
+          >
+            {reportSent ? "✓ Reported" : "⚠ Report"}
           </button>
           <button style={{ ...styles.logoutBtn, position: "static", padding: "3px 10px", fontSize: 11 }} onClick={handleLogout}>Log out</button>
         </div>
@@ -966,40 +1100,93 @@ export default function App() {
       <div style={styles.progressTrack}>
         <div style={{ ...styles.progressFill, width: `${(totalReviewed / cards.length) * 100}%` }} />
       </div>
-      <div style={styles.cardArea}>
-        <div style={{ ...styles.cardWrapper, ...(flipped ? styles.cardWrapperFlipped : {}) }} onClick={() => setFlipped((f) => !f)}>
-          <div style={styles.cardFront}>
+      {mode === "fillin" ? (
+        <>
+          <div style={styles.fillCard}>
             <span style={styles.cardSide}>QUESTION</span>
             <p style={styles.cardText}><FormatText text={card?.question} /></p>
-            <span style={styles.tapHint}>tap to reveal answer</span>
+            {!fillResult && (
+              <form onSubmit={handleFillSubmit} style={styles.fillForm}>
+                <input
+                  type="text"
+                  placeholder="Type your answer..."
+                  value={typedAnswer}
+                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  autoFocus
+                  style={styles.fillInput}
+                />
+                <button type="submit" style={styles.fillSubmitBtn} disabled={!typedAnswer.trim()}>
+                  Check
+                </button>
+              </form>
+            )}
+            {fillResult === "correct" && (
+              <div style={styles.fillFeedback}>
+                <span style={styles.fillCorrect}>Correct!</span>
+                <p style={styles.fillAnswer}><FormatText text={card?.answer} /></p>
+                <p style={styles.ratingPrompt}>How easy was that?</p>
+                <div style={styles.ratingRow}>
+                  {RATINGS.slice(1).map((r) => (
+                    <button key={r.value}
+                      style={{ ...styles.ratingBtn, background: r.color }}
+                      onClick={() => handleFillNext(r)}>
+                      <span style={{ fontSize: 18 }}>{r.emoji}</span>
+                      <span style={styles.ratingLabel}>{r.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {fillResult === "wrong" && (
+              <div style={styles.fillFeedback}>
+                <span style={styles.fillWrong}>Not quite</span>
+                <p style={styles.fillYourAnswer}>You wrote: {typedAnswer}</p>
+                <p style={styles.fillCorrectAnswer}>Answer: <FormatText text={card?.answer} /></p>
+                <button style={styles.fillNextBtn} onClick={() => handleFillNext(null)}>
+                  Next Card →
+                </button>
+              </div>
+            )}
           </div>
-          <div style={styles.cardBack}>
-            <span style={{ ...styles.cardSide, color: "#9c8a89" }}>ANSWER</span>
-            <p style={{ ...styles.cardText, color: "#3d3332" }}><FormatText text={card?.answer} /></p>
+        </>
+      ) : (
+        <>
+          <div style={styles.cardArea}>
+            <div style={{ ...styles.cardWrapper, ...(flipped ? styles.cardWrapperFlipped : {}) }} onClick={() => setFlipped((f) => !f)}>
+              <div style={styles.cardFront}>
+                <span style={styles.cardSide}>QUESTION</span>
+                <p style={styles.cardText}><FormatText text={card?.question} /></p>
+                <span style={styles.tapHint}>tap to reveal answer</span>
+              </div>
+              <div style={styles.cardBack}>
+                <span style={{ ...styles.cardSide, color: "#9c8a89" }}>ANSWER</span>
+                <p style={{ ...styles.cardText, color: "#3d3332" }}><FormatText text={card?.answer} /></p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      {flipped && (
-        <div style={styles.ratingArea}>
-          <p style={styles.ratingPrompt}>How did you do?</p>
-          <div style={styles.ratingRow}>
-            {RATINGS.map((r) => (
-              <button key={r.value}
-                style={{ ...styles.ratingBtn, background: r.color, opacity: savingRating ? 0.6 : 1 }}
-                onClick={() => handleRating(r)} disabled={savingRating}
-                onMouseOver={e => { if (!savingRating) e.currentTarget.style.background = r.hover; }}
-                onMouseOut={e => { e.currentTarget.style.background = r.color; }}>
-                <span style={{ fontSize: 18 }}>{r.emoji}</span>
-                <span style={styles.ratingLabel}>{r.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+          {flipped && (
+            <div style={styles.ratingArea}>
+              <p style={styles.ratingPrompt}>How did you do?</p>
+              <div style={styles.ratingRow}>
+                {RATINGS.map((r) => (
+                  <button key={r.value}
+                    style={{ ...styles.ratingBtn, background: r.color, opacity: savingRating ? 0.6 : 1 }}
+                    onClick={() => handleRating(r)} disabled={savingRating}
+                    onMouseOver={e => { if (!savingRating) e.currentTarget.style.background = r.hover; }}
+                    onMouseOut={e => { e.currentTarget.style.background = r.color; }}>
+                    <span style={{ fontSize: 18 }}>{r.emoji}</span>
+                    <span style={styles.ratingLabel}>{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {!flipped && lastRating && (
+            <button style={styles.undoBtn} onClick={handleUndo}>↩ Undo last rating</button>
+          )}
+          {!flipped && !lastRating && <p style={styles.flipPrompt}>👆 Tap the card to flip it</p>}
+        </>
       )}
-      {!flipped && lastRating && (
-        <button style={styles.undoBtn} onClick={handleUndo}>↩ Undo last rating</button>
-      )}
-      {!flipped && !lastRating && <p style={styles.flipPrompt}>👆 Tap the card to flip it</p>}
       <div style={styles.shortcutHint}>
         <span style={styles.shortcutKey}>Space</span> flip
         {flipped && (
@@ -1075,6 +1262,8 @@ const styles = {
   ratingBtn: { border: "none", borderRadius: 14, padding: "14px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, transition: "background 0.15s", color: "white" },
   ratingLabel: { fontSize: 12, fontWeight: "700", fontFamily: F, letterSpacing: "0.03em" },
   flagBtn: { background: "transparent", border: "none", fontSize: 20, cursor: "pointer", padding: "2px 6px", lineHeight: 1 },
+  reportBtn: { background: "transparent", border: "1px solid #e8e0d4", borderRadius: 6, color: "#9c8a89", fontSize: 10, cursor: "pointer", padding: "3px 8px", fontFamily: F, fontWeight: "500" },
+  reportBtnSent: { background: "#dcfce7", border: "1px solid #16a34a", color: "#16a34a", cursor: "default" },
   flaggedBtn: { background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left", color: "#d97706" },
   undoBtn: { background: "transparent", border: "1px solid #e8e0d4", borderRadius: 10, color: "#9c8a89", fontSize: 13, fontFamily: F, cursor: "pointer", padding: "8px 18px", marginTop: 8 },
   shortcutHint: { display: "flex", alignItems: "center", gap: 6, marginTop: 16, color: "#b0a09f", fontSize: 11, fontFamily: F, flexWrap: "wrap", justifyContent: "center" },
@@ -1110,4 +1299,25 @@ const styles = {
   progressBarTrack: { width: "100%", height: 4, background: "#f0ebe3", borderRadius: 4, overflow: "hidden", marginTop: 4 },
   progressBarFill: { height: "100%", background: "#16a34a", borderRadius: 4, transition: "width 0.4s ease" },
   progressPct: { fontSize: 11, color: "#9c8a89", fontFamily: F, marginTop: 2 },
+  fillCard: { width: "100%", maxWidth: 480, background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 20, padding: "36px 28px", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 24 },
+  fillForm: { display: "flex", gap: 10, width: "100%", marginTop: 24 },
+  fillInput: { flex: 1, padding: "12px 16px", background: "#faf7f0", border: "1px solid #e8e0d4", borderRadius: 12, color: "#3d3332", fontSize: 16, fontFamily: F, outline: "none", boxSizing: "border-box" },
+  fillSubmitBtn: { background: "#b45309", color: "white", border: "none", borderRadius: 12, padding: "12px 20px", fontSize: 14, fontWeight: "600", cursor: "pointer", fontFamily: F, whiteSpace: "nowrap" },
+  fillFeedback: { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 20, width: "100%" },
+  fillCorrect: { fontSize: 18, fontWeight: "600", color: "#16a34a", fontFamily: F },
+  fillWrong: { fontSize: 18, fontWeight: "600", color: "#dc2626", fontFamily: F },
+  fillAnswer: { fontSize: 18, color: "#3d3332", fontFamily: F, textAlign: "center" },
+  fillYourAnswer: { fontSize: 14, color: "#9c8a89", fontFamily: F, margin: 0 },
+  fillCorrectAnswer: { fontSize: 16, color: "#3d3332", fontFamily: F, fontWeight: "600", margin: 0 },
+  fillNextBtn: { background: "#b45309", color: "white", border: "none", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: "600", cursor: "pointer", fontFamily: F, marginTop: 8 },
+  pointsEarned: { display: "flex", alignItems: "center", gap: 8, background: "#fef3c7", borderRadius: 12, padding: "10px 20px", marginBottom: 16 },
+  pointsStar: { fontSize: 22 },
+  pointsNum: { fontSize: 18, fontWeight: "700", color: "#b45309", fontFamily: F },
+  leaderboardSection: { width: "100%", marginBottom: 20 },
+  leaderboardTitle: { fontSize: 16, fontWeight: "600", color: "#3d3332", fontFamily: F, margin: "0 0 10px", textAlign: "center" },
+  leaderboardRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, marginBottom: 4, background: "#ffffff", border: "1px solid #f0ebe3" },
+  leaderboardRowMe: { background: "#fef3c7", border: "1px solid #b45309" },
+  leaderboardRank: { fontSize: 18, width: 30, textAlign: "center" },
+  leaderboardName: { flex: 1, fontSize: 14, color: "#3d3332", fontFamily: F },
+  leaderboardPts: { fontSize: 14, fontWeight: "700", color: "#b45309", fontFamily: F },
 };
