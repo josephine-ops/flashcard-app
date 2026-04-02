@@ -632,7 +632,7 @@ export default function App() {
       <div style={styles.page}>
         <div style={styles.centered}>
           <div style={styles.spinner} />
-          <p style={{ color: "#94a3b8", marginTop: 16, fontFamily: "monospace" }}>Loading...</p>
+          <p style={{ color: "#9c8a89", marginTop: 16, fontFamily: F }}>Loading...</p>
         </div>
       </div>
     );
@@ -692,7 +692,7 @@ export default function App() {
       <div style={styles.page}>
         <div style={styles.centered}>
           <div style={styles.spinner} />
-          <p style={{ color: "#94a3b8", marginTop: 16, fontFamily: "monospace" }}>Loading...</p>
+          <p style={{ color: "#9c8a89", marginTop: 16, fontFamily: F }}>Loading...</p>
         </div>
       </div>
     );
@@ -953,9 +953,9 @@ export default function App() {
         </span>
         <div style={styles.topStats}>
           <span style={styles.statChip}>{remaining} left</span>
-          <span style={{ ...styles.statChip, background: "#1e3a5f", color: "#60a5fa" }}>{totalReviewed} done</span>
+          <span style={{ ...styles.statChip, background: "#dcfce7", color: "#16a34a" }}>{totalReviewed} done</span>
           <button
-            style={{ ...styles.flagBtn, color: card && flaggedIds.has(card.id) ? "#f59e0b" : "#334155" }}
+            style={{ ...styles.flagBtn, color: card && flaggedIds.has(card.id) ? "#d97706" : "#b0a09f" }}
             onClick={(e) => { e.stopPropagation(); if (card) toggleFlag(card.id); }}
           >
             {card && flaggedIds.has(card.id) ? "★" : "☆"}
@@ -974,8 +974,8 @@ export default function App() {
             <span style={styles.tapHint}>tap to reveal answer</span>
           </div>
           <div style={styles.cardBack}>
-            <span style={{ ...styles.cardSide, color: "#64748b" }}>ANSWER</span>
-            <p style={{ ...styles.cardText, color: "#0f172a" }}><FormatText text={card?.answer} /></p>
+            <span style={{ ...styles.cardSide, color: "#9c8a89" }}>ANSWER</span>
+            <p style={{ ...styles.cardText, color: "#3d3332" }}><FormatText text={card?.answer} /></p>
           </div>
         </div>
       </div>
@@ -1027,86 +1027,87 @@ export default function App() {
   );
 }
 
+const F = "'Inter', 'Open Sans', Helvetica, Arial, sans-serif";
 const styles = {
-  page: { minHeight: "100vh", width: "100%", background: "#0a0f1e", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Georgia', serif", padding: "0 16px 40px", boxSizing: "border-box" },
+  page: { minHeight: "100vh", width: "100%", background: "linear-gradient(#fff, #fcf9ee 30%, #fcf9ee)", backgroundColor: "#fcf9ee", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: F, padding: "0 16px 40px", boxSizing: "border-box", color: "#3d3332" },
   centered: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh" },
-  spinner: { width: 40, height: 40, border: "3px solid #1e293b", borderTop: "3px solid #3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
+  spinner: { width: 40, height: 40, border: "3px solid #e8e0d4", borderTop: "3px solid #b45309", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
   selectContainer: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", maxWidth: 480, width: "100%", textAlign: "center" },
   logoImg: { width: 160, height: 160, marginBottom: 8, objectFit: "contain" },
-  title: { fontSize: 36, fontWeight: "bold", color: "#f8fafc", margin: "0 0 8px", letterSpacing: "-1px" },
-  subtitle: { color: "#64748b", fontSize: 15, marginBottom: 16 },
-  hintText: { color: "#334155", fontSize: 13, fontFamily: "sans-serif", marginTop: 16 },
+  title: { fontSize: 32, fontWeight: "600", color: "#3d3332", margin: "0 0 8px", letterSpacing: "-0.5px" },
+  subtitle: { color: "#7c6a69", fontSize: 15, marginBottom: 16, fontWeight: "400" },
+  hintText: { color: "#9c8a89", fontSize: 13, fontFamily: F, marginTop: 16 },
   pillRow: { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", justifyContent: "center" },
-  pill: { background: "#111827", border: "1px solid #1e293b", borderRadius: 20, padding: "6px 16px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
-  pillActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
+  pill: { background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 20, padding: "6px 16px", color: "#7c6a69", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: F, transition: "all 0.15s" },
+  pillActive: { background: "#fef3c7", border: "1px solid #b45309", color: "#b45309" },
   modeRow: { display: "flex", gap: 8, marginBottom: 24, width: "100%" },
-  modeBtn: { flex: 1, background: "#111827", border: "1px solid #1e293b", borderRadius: 12, padding: "10px", color: "#64748b", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.15s" },
-  modeBtnActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
+  modeBtn: { flex: 1, background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 12, padding: "10px", color: "#7c6a69", fontSize: 13, fontWeight: "600", cursor: "pointer", fontFamily: F, transition: "all 0.15s" },
+  modeBtnActive: { background: "#fef3c7", border: "1px solid #b45309", color: "#b45309" },
   subjectGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", marginBottom: 16 },
-  subjectBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 16, padding: "28px 20px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.2s ease, border-color 0.2s", color: "white", position: "relative" },
-  subjectBtnSelected: { border: "1px solid #3b82f6", background: "#1a2744" },
-  checkmark: { position: "absolute", top: 10, right: 14, color: "#60a5fa", fontSize: 14, fontWeight: "bold" },
-  subjectLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
-  startBtn: { width: "100%", background: "#3b82f6", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", marginTop: 8 },
-  mixedBtn: { width: "100%", background: "#5b21b6", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif", marginTop: 8 },
+  subjectBtn: { background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 16, padding: "28px 20px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.2s ease, border-color 0.2s, box-shadow 0.2s", color: "#3d3332", position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" },
+  subjectBtnSelected: { border: "1px solid #b45309", background: "#fef3c7" },
+  checkmark: { position: "absolute", top: 10, right: 14, color: "#b45309", fontSize: 14, fontWeight: "bold" },
+  subjectLabel: { fontSize: 15, fontWeight: "600", color: "#3d3332", fontFamily: F },
+  startBtn: { width: "100%", background: "#b45309", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: "600", cursor: "pointer", fontFamily: F, marginTop: 8 },
+  mixedBtn: { width: "100%", background: "#7c3aed", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: "600", cursor: "pointer", fontFamily: F, marginTop: 8 },
   topicList: { display: "flex", flexDirection: "column", gap: 10, width: "100%", marginBottom: 16 },
-  topicBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left" },
-  topicBtnSelected: { border: "1px solid #3b82f6", background: "#1a2744" },
-  topicLabel: { fontSize: 15, fontWeight: "600", color: "#e2e8f0", fontFamily: "sans-serif" },
+  topicBtn: { background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" },
+  topicBtnSelected: { border: "1px solid #b45309", background: "#fef3c7" },
+  topicLabel: { fontSize: 15, fontWeight: "600", color: "#3d3332", fontFamily: F },
   topBar: { width: "100%", maxWidth: 480, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0 12px", gap: 8 },
-  backBtn: { background: "transparent", border: "none", color: "#475569", cursor: "pointer", fontSize: 14, fontFamily: "sans-serif", padding: "4px 0" },
-  subjectTag: { color: "#94a3b8", fontFamily: "sans-serif", fontSize: 14, fontWeight: "600", letterSpacing: "0.05em", textTransform: "uppercase" },
-  topStats: { display: "flex", gap: 6 },
-  statChip: { background: "#1a2744", color: "#94a3b8", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontFamily: "sans-serif", fontWeight: "600" },
-  progressTrack: { width: "100%", maxWidth: 480, height: 3, background: "#1e293b", borderRadius: 4, marginBottom: 32, overflow: "hidden" },
-  progressFill: { height: "100%", background: "linear-gradient(90deg, #3b82f6, #8b5cf6)", borderRadius: 4, transition: "width 0.4s ease" },
+  backBtn: { background: "transparent", border: "none", color: "#9c8a89", cursor: "pointer", fontSize: 14, fontFamily: F, padding: "4px 0", fontWeight: "500" },
+  subjectTag: { color: "#7c6a69", fontFamily: F, fontSize: 14, fontWeight: "600", letterSpacing: "0.05em", textTransform: "uppercase" },
+  topStats: { display: "flex", gap: 6, alignItems: "center" },
+  statChip: { background: "#fef3c7", color: "#92400e", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontFamily: F, fontWeight: "600" },
+  progressTrack: { width: "100%", maxWidth: 480, height: 3, background: "#e8e0d4", borderRadius: 4, marginBottom: 32, overflow: "hidden" },
+  progressFill: { height: "100%", background: "linear-gradient(90deg, #b45309, #d97706)", borderRadius: 4, transition: "width 0.4s ease" },
   cardArea: { width: "100%", maxWidth: 480, perspective: 1000, marginBottom: 24 },
   cardWrapper: { position: "relative", width: "100%", minHeight: 280, transformStyle: "preserve-3d", transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)", cursor: "pointer", borderRadius: 20 },
   cardWrapperFlipped: { transform: "rotateY(180deg)" },
-  cardFront: { position: "absolute", width: "100%", minHeight: 280, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", background: "#111827", border: "1px solid #1e293b", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "36px 28px", boxSizing: "border-box" },
-  cardBack: { position: "absolute", width: "100%", minHeight: 280, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", background: "#f8fafc", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "36px 28px", boxSizing: "border-box", transform: "rotateY(180deg)" },
-  cardSide: { fontSize: 10, letterSpacing: "0.15em", color: "#334155", fontFamily: "sans-serif", fontWeight: "700", marginBottom: 20, textTransform: "uppercase" },
-  cardText: { fontSize: 22, color: "#f1f5f9", textAlign: "center", lineHeight: 1.5, margin: 0 },
-  tapHint: { marginTop: 28, fontSize: 12, color: "#334155", fontFamily: "sans-serif", letterSpacing: "0.05em" },
+  cardFront: { position: "absolute", width: "100%", minHeight: 280, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "36px 28px", boxSizing: "border-box", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  cardBack: { position: "absolute", width: "100%", minHeight: 280, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", background: "#faf7f0", border: "1px solid #e8e0d4", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "36px 28px", boxSizing: "border-box", transform: "rotateY(180deg)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  cardSide: { fontSize: 10, letterSpacing: "0.15em", color: "#9c8a89", fontFamily: F, fontWeight: "700", marginBottom: 20, textTransform: "uppercase" },
+  cardText: { fontSize: 22, color: "#3d3332", textAlign: "center", lineHeight: 1.5, margin: 0 },
+  tapHint: { marginTop: 28, fontSize: 12, color: "#b0a09f", fontFamily: F, letterSpacing: "0.05em" },
   ratingArea: { width: "100%", maxWidth: 480 },
-  ratingPrompt: { color: "#475569", fontSize: 13, fontFamily: "sans-serif", textAlign: "center", marginBottom: 12 },
+  ratingPrompt: { color: "#7c6a69", fontSize: 13, fontFamily: F, textAlign: "center", marginBottom: 12 },
   ratingRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 },
   ratingBtn: { border: "none", borderRadius: 14, padding: "14px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, transition: "background 0.15s", color: "white" },
-  ratingLabel: { fontSize: 12, fontWeight: "700", fontFamily: "sans-serif", letterSpacing: "0.03em" },
+  ratingLabel: { fontSize: 12, fontWeight: "700", fontFamily: F, letterSpacing: "0.03em" },
   flagBtn: { background: "transparent", border: "none", fontSize: 20, cursor: "pointer", padding: "2px 6px", lineHeight: 1 },
-  flaggedBtn: { background: "#111827", border: "1px solid #1e293b", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left", color: "#f59e0b" },
-  undoBtn: { background: "transparent", border: "1px solid #1e293b", borderRadius: 10, color: "#64748b", fontSize: 13, fontFamily: "sans-serif", cursor: "pointer", padding: "8px 18px", marginTop: 8 },
-  shortcutHint: { display: "flex", alignItems: "center", gap: 6, marginTop: 16, color: "#334155", fontSize: 11, fontFamily: "sans-serif", flexWrap: "wrap", justifyContent: "center" },
-  shortcutKey: { background: "#1e293b", borderRadius: 4, padding: "2px 6px", fontSize: 10, fontWeight: "700", color: "#64748b", fontFamily: "monospace" },
-  shortcutSep: { color: "#1e293b" },
-  flipPrompt: { color: "#334155", fontSize: 13, fontFamily: "sans-serif", marginTop: 8 },
+  flaggedBtn: { background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 14, padding: "18px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s", textAlign: "left", color: "#d97706" },
+  undoBtn: { background: "transparent", border: "1px solid #e8e0d4", borderRadius: 10, color: "#9c8a89", fontSize: 13, fontFamily: F, cursor: "pointer", padding: "8px 18px", marginTop: 8 },
+  shortcutHint: { display: "flex", alignItems: "center", gap: 6, marginTop: 16, color: "#b0a09f", fontSize: 11, fontFamily: F, flexWrap: "wrap", justifyContent: "center" },
+  shortcutKey: { background: "#f0ebe3", borderRadius: 4, padding: "2px 6px", fontSize: 10, fontWeight: "700", color: "#7c6a69", fontFamily: "monospace" },
+  shortcutSep: { color: "#e8e0d4" },
+  flipPrompt: { color: "#b0a09f", fontSize: 13, fontFamily: F, marginTop: 8 },
   doneContainer: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", maxWidth: 400, width: "100%", textAlign: "center" },
   doneEmoji: { fontSize: 56, marginBottom: 16 },
-  doneTitle: { fontSize: 28, color: "#f8fafc", fontWeight: "bold", margin: "0 0 8px" },
-  doneSubject: { color: "#64748b", fontSize: 14, fontFamily: "sans-serif", marginBottom: 32 },
+  doneTitle: { fontSize: 28, color: "#3d3332", fontWeight: "600", margin: "0 0 8px" },
+  doneSubject: { color: "#7c6a69", fontSize: 14, fontFamily: F, marginBottom: 32 },
   scoreGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, width: "100%", marginBottom: 32 },
-  scoreCard: { background: "#111827", border: "1px solid", borderRadius: 14, padding: "16px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 },
+  scoreCard: { background: "#ffffff", border: "1px solid", borderRadius: 14, padding: "16px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 },
   scoreNum: { fontSize: 24, fontWeight: "bold" },
-  scoreLabel: { fontSize: 11, color: "#64748b", fontFamily: "sans-serif", fontWeight: "600" },
+  scoreLabel: { fontSize: 11, color: "#7c6a69", fontFamily: F, fontWeight: "600" },
   btnRow: { display: "flex", gap: 12, width: "100%" },
-  againBtn: { flex: 1, background: "#3b82f6", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" },
-  switchBtn: { flex: 1, background: "#1e293b", color: "#94a3b8", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" },
-  authInput: { width: "100%", padding: "14px 16px", background: "#111827", border: "1px solid #1e293b", borderRadius: 12, color: "#f1f5f9", fontSize: 15, fontFamily: "sans-serif", boxSizing: "border-box", outline: "none" },
-  authError: { color: "#ef4444", fontSize: 13, fontFamily: "sans-serif", margin: 0, textAlign: "center" },
-  authToggle: { background: "transparent", border: "none", color: "#60a5fa", fontSize: 13, fontFamily: "sans-serif", cursor: "pointer", marginTop: 16, padding: 0 },
-  logoutBtn: { position: "absolute", top: 20, right: 20, background: "transparent", border: "1px solid #1e293b", borderRadius: 8, color: "#64748b", fontSize: 13, fontFamily: "sans-serif", cursor: "pointer", padding: "6px 14px" },
+  againBtn: { flex: 1, background: "#b45309", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: "600", cursor: "pointer", fontFamily: F },
+  switchBtn: { flex: 1, background: "#f0ebe3", color: "#7c6a69", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: "600", cursor: "pointer", fontFamily: F },
+  authInput: { width: "100%", padding: "14px 16px", background: "#ffffff", border: "1px solid #e8e0d4", borderRadius: 12, color: "#3d3332", fontSize: 15, fontFamily: F, boxSizing: "border-box", outline: "none" },
+  authError: { color: "#dc2626", fontSize: 13, fontFamily: F, margin: 0, textAlign: "center" },
+  authToggle: { background: "transparent", border: "none", color: "#b45309", fontSize: 13, fontFamily: F, cursor: "pointer", marginTop: 16, padding: 0, fontWeight: "500" },
+  logoutBtn: { position: "absolute", top: 20, right: 20, background: "transparent", border: "1px solid #e8e0d4", borderRadius: 8, color: "#9c8a89", fontSize: 13, fontFamily: F, cursor: "pointer", padding: "6px 14px" },
   homeStats: { display: "flex", gap: 10, marginBottom: 12, justifyContent: "center" },
-  streakBadge: { display: "flex", alignItems: "center", gap: 6, background: "#422006", borderRadius: 12, padding: "8px 16px" },
+  streakBadge: { display: "flex", alignItems: "center", gap: 6, background: "#fef3c7", borderRadius: 12, padding: "8px 16px" },
   streakFire: { fontSize: 18 },
-  streakCount: { fontSize: 20, fontWeight: "bold", color: "#f59e0b", fontFamily: "sans-serif" },
-  streakLabel: { fontSize: 13, color: "#d97706", fontFamily: "sans-serif" },
-  dueBadge: { display: "flex", alignItems: "center", gap: 8, background: "#1e3a5f", borderRadius: 12, padding: "8px 16px" },
-  dueCount: { fontSize: 20, fontWeight: "bold", color: "#60a5fa", fontFamily: "sans-serif" },
-  dueLabel: { fontSize: 13, color: "#94a3b8", fontFamily: "sans-serif" },
-  tabBar: { display: "flex", gap: 0, width: "100%", marginBottom: 16, borderBottom: "1px solid #1e293b" },
-  tab: { flex: 1, background: "transparent", border: "none", borderBottom: "2px solid transparent", color: "#64748b", fontSize: 14, fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", padding: "12px 0", transition: "all 0.15s" },
-  tabActive: { color: "#60a5fa", borderBottom: "2px solid #3b82f6" },
-  progressBarTrack: { width: "100%", height: 4, background: "#1e293b", borderRadius: 4, overflow: "hidden", marginTop: 4 },
-  progressBarFill: { height: "100%", background: "#22c55e", borderRadius: 4, transition: "width 0.4s ease" },
-  progressPct: { fontSize: 11, color: "#64748b", fontFamily: "sans-serif", marginTop: 2 },
+  streakCount: { fontSize: 20, fontWeight: "bold", color: "#b45309", fontFamily: F },
+  streakLabel: { fontSize: 13, color: "#92400e", fontFamily: F },
+  dueBadge: { display: "flex", alignItems: "center", gap: 8, background: "#fef3c7", borderRadius: 12, padding: "8px 16px" },
+  dueCount: { fontSize: 20, fontWeight: "bold", color: "#b45309", fontFamily: F },
+  dueLabel: { fontSize: 13, color: "#92400e", fontFamily: F },
+  tabBar: { display: "flex", gap: 0, width: "100%", marginBottom: 16, borderBottom: "1px solid #e8e0d4" },
+  tab: { flex: 1, background: "transparent", border: "none", borderBottom: "2px solid transparent", color: "#9c8a89", fontSize: 14, fontWeight: "600", fontFamily: F, cursor: "pointer", padding: "12px 0", transition: "all 0.15s" },
+  tabActive: { color: "#b45309", borderBottom: "2px solid #b45309" },
+  progressBarTrack: { width: "100%", height: 4, background: "#f0ebe3", borderRadius: 4, overflow: "hidden", marginTop: 4 },
+  progressBarFill: { height: "100%", background: "#16a34a", borderRadius: 4, transition: "width 0.4s ease" },
+  progressPct: { fontSize: 11, color: "#9c8a89", fontFamily: F, marginTop: 2 },
 };

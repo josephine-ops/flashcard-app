@@ -150,7 +150,7 @@ export default function StatsTab({ session }) {
           <span style={styles.summaryLabel}>Study Time</span>
         </div>
         <div style={styles.summaryCard}>
-          <span style={{ ...styles.summaryNum, color: streak > 0 ? "#f59e0b" : COLORS.textDim }}>
+          <span style={{ ...styles.summaryNum, color: streak > 0 ? "#d97706" : COLORS.textDim }}>
             {streak > 0 ? `${streak}${streak >= 7 ? "🔥" : ""}` : "0"}
           </span>
           <span style={styles.summaryLabel}>Day Streak</span>
@@ -199,7 +199,7 @@ export default function StatsTab({ session }) {
             {[
               { label: "Easy", value: accuracyData.easy, color: "#22c55e" },
               { label: "Good", value: accuracyData.good, color: "#3b82f6" },
-              { label: "Hard", value: accuracyData.hard, color: "#f59e0b" },
+              { label: "Hard", value: accuracyData.hard, color: "#d97706" },
               { label: "Forgot", value: accuracyData.forgot, color: "#ef4444" },
             ].map((item) => {
               const pct = Math.round((item.value / totalRatings) * 100);
@@ -226,7 +226,7 @@ const styles = {
     justifyContent: "center", padding: "60px 0",
   },
   loadingText: {
-    color: COLORS.textMuted, marginTop: 16, fontFamily: "monospace", fontSize: 13,
+    color: COLORS.textMuted, marginTop: 16, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontSize: 13,
   },
   container: {
     display: "flex", flexDirection: "column", gap: 20, width: "100%",
@@ -239,20 +239,20 @@ const styles = {
     padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
   },
   summaryNum: {
-    fontSize: 22, fontWeight: "bold", color: COLORS.accentLight, fontFamily: "sans-serif",
+    fontSize: 22, fontWeight: "bold", color: COLORS.accentLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   summaryLabel: {
-    fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif", fontWeight: "600",
+    fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontWeight: "600",
     textTransform: "uppercase", letterSpacing: "0.05em",
   },
   section: { width: "100%" },
   sectionTitle: {
-    fontSize: 14, fontWeight: "bold", color: COLORS.textLight, fontFamily: "sans-serif",
+    fontSize: 14, fontWeight: "bold", color: COLORS.textLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
     margin: "0 0 10px",
   },
   masteryBar: { display: "flex", flexDirection: "column", gap: 6 },
   masteryText: {
-    fontSize: 12, color: COLORS.textDim, fontFamily: "sans-serif",
+    fontSize: 12, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
 
   // Chart
@@ -272,15 +272,15 @@ const styles = {
     width: "100%", borderRadius: 2, minHeight: 2, transition: "height 0.3s ease",
   },
   barLabel: {
-    fontSize: 9, color: COLORS.textDarkest, fontFamily: "sans-serif",
+    fontSize: 9, color: COLORS.textDarkest, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   barCount: {
-    fontSize: 8, color: COLORS.textDim, fontFamily: "sans-serif", position: "absolute", top: -2,
+    fontSize: 8, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", position: "absolute", top: -2,
   },
 
   // Distribution
   totalReviews: {
-    fontSize: 12, color: COLORS.textDim, fontFamily: "sans-serif", margin: "0 0 10px",
+    fontSize: 12, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", margin: "0 0 10px",
   },
   distContainer: {
     display: "flex", flexDirection: "column", gap: 8,
@@ -289,7 +289,7 @@ const styles = {
     display: "flex", alignItems: "center", gap: 10,
   },
   distLabel: {
-    fontSize: 12, color: COLORS.textMuted, fontFamily: "sans-serif", width: 50, textAlign: "right",
+    fontSize: 12, color: COLORS.textMuted, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", width: 50, textAlign: "right",
   },
   distBarTrack: {
     flex: 1, height: 8, background: COLORS.border, borderRadius: 4, overflow: "hidden",
@@ -298,6 +298,6 @@ const styles = {
     height: "100%", borderRadius: 4, transition: "width 0.4s ease",
   },
   distPct: {
-    fontSize: 12, color: COLORS.textDim, fontFamily: "sans-serif", width: 35,
+    fontSize: 12, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", width: 35,
   },
 };

@@ -727,7 +727,7 @@ const styles = {
     margin: "40px 0 8px", letterSpacing: "-1px",
   },
   subtitle: {
-    color: COLORS.textDim, fontSize: 14, fontFamily: "sans-serif", marginBottom: 20,
+    color: COLORS.textDim, fontSize: 14, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", marginBottom: 20,
   },
   header: {
     width: "100%", display: "flex", alignItems: "center", marginBottom: 8,
@@ -746,10 +746,10 @@ const styles = {
   inviteBtn: {
     background: COLORS.accent, color: "white", border: "none", borderRadius: 10,
     padding: "10px 18px", fontSize: 13, fontWeight: "600", cursor: "pointer",
-    fontFamily: "sans-serif", whiteSpace: "nowrap", height: 38,
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", whiteSpace: "nowrap", height: 38,
   },
   inviteMsg: {
-    color: COLORS.accentLight, fontSize: 12, fontFamily: "sans-serif", margin: "0 0 12px",
+    color: COLORS.accentLight, fontSize: 12, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", margin: "0 0 12px",
   },
   searchInput: {
     ...commonStyles.input, borderRadius: 10, padding: "10px 14px", fontSize: 13,
@@ -771,30 +771,30 @@ const styles = {
     display: "flex", flexDirection: "column", gap: 2,
   },
   studentCardName: {
-    fontSize: 15, fontWeight: "600", color: COLORS.textLight, fontFamily: "sans-serif",
+    fontSize: 15, fontWeight: "600", color: COLORS.textLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   studentCardEmail: {
-    fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif",
+    fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   viewBtn: {
     background: COLORS.accentBg, color: COLORS.accentLight, border: "none",
     borderRadius: 8, padding: "8px 0", fontSize: 12, fontWeight: "600",
-    cursor: "pointer", fontFamily: "sans-serif", width: "100%", marginTop: 4,
+    cursor: "pointer", fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", width: "100%", marginTop: 4,
   },
   lastLogin: {
-    fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif",
+    fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   studentCardStats: {
     display: "flex", gap: 12,
   },
   miniStat: {
-    fontSize: 12, color: COLORS.textMuted, fontFamily: "sans-serif",
+    fontSize: 12, color: COLORS.textMuted, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   subjectBars: { display: "flex", flexDirection: "column", gap: 6 },
   miniSubject: { display: "flex", flexDirection: "column", gap: 2 },
   miniSubjectHeader: { display: "flex", justifyContent: "space-between" },
-  miniSubjectName: { fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif" },
-  miniSubjectPct: { fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif" },
+  miniSubjectName: { fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
+  miniSubjectPct: { fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
   miniProgressTrack: {
     width: "100%", height: 3, background: COLORS.border, borderRadius: 3, overflow: "hidden",
   },
@@ -808,10 +808,10 @@ const styles = {
     padding: "12px 16px", display: "flex", justifyContent: "space-between",
     alignItems: "center", width: "100%", boxSizing: "border-box", marginBottom: 8,
   },
-  pendingEmail: { fontSize: 13, color: COLORS.textMuted, fontFamily: "sans-serif" },
+  pendingEmail: { fontSize: 13, color: COLORS.textMuted, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
   pendingBadge: {
-    fontSize: 11, color: COLORS.warning, fontFamily: "sans-serif", fontWeight: "600",
-    background: "#422006", padding: "2px 8px", borderRadius: 8,
+    fontSize: 11, color: COLORS.warning, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontWeight: "600",
+    background: "#fef3c7", padding: "2px 8px", borderRadius: 8,
   },
 
   // Student detail
@@ -823,7 +823,7 @@ const styles = {
   },
   editNameBtn: {
     background: COLORS.accentBg, border: "none", borderRadius: 8,
-    color: COLORS.accentLight, fontSize: 13, fontFamily: "sans-serif", cursor: "pointer",
+    color: COLORS.accentLight, fontSize: 13, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", cursor: "pointer",
     padding: "6px 14px", fontWeight: "600",
   },
   editNameRow: {
@@ -835,15 +835,15 @@ const styles = {
   editNameSave: {
     background: COLORS.accent, color: "white", border: "none", borderRadius: 6,
     padding: "8px 14px", fontSize: 12, fontWeight: "600", cursor: "pointer",
-    fontFamily: "sans-serif",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   editNameCancel: {
     background: "transparent", border: `1px solid ${COLORS.border}`, borderRadius: 6,
     color: COLORS.textDim, fontSize: 12, cursor: "pointer", padding: "8px 12px",
-    fontFamily: "sans-serif",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   email: {
-    color: COLORS.textDim, fontSize: 13, fontFamily: "sans-serif", marginBottom: 16,
+    color: COLORS.textDim, fontSize: 13, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", marginBottom: 16,
   },
   statsRow: {
     display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, width: "100%", marginBottom: 24,
@@ -853,18 +853,18 @@ const styles = {
     padding: "14px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
   },
   statNum: { fontSize: 20, fontWeight: "bold", color: COLORS.accentLight },
-  statLabel: { fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif" },
+  statLabel: { fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
 
   sectionTitle: {
-    fontSize: 16, fontWeight: "bold", color: COLORS.textLight, fontFamily: "sans-serif",
+    fontSize: 16, fontWeight: "bold", color: COLORS.textLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
     margin: "20px 0 12px", alignSelf: "flex-start",
   },
   subSectionTitle: {
-    fontSize: 14, fontWeight: "600", color: COLORS.textMuted, fontFamily: "sans-serif",
+    fontSize: 14, fontWeight: "600", color: COLORS.textMuted, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
     margin: "16px 0 10px", alignSelf: "flex-start",
   },
   emptyText: {
-    color: COLORS.textDarkest, fontSize: 13, fontFamily: "sans-serif",
+    color: COLORS.textDarkest, fontSize: 13, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
 
   // Subject progress
@@ -872,8 +872,8 @@ const styles = {
   subjectRowHeader: {
     display: "flex", justifyContent: "space-between", marginBottom: 4,
   },
-  subjectName: { fontSize: 13, color: COLORS.textLight, fontFamily: "sans-serif" },
-  subjectPct: { fontSize: 13, color: COLORS.textDim, fontFamily: "sans-serif" },
+  subjectName: { fontSize: 13, color: COLORS.textLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
+  subjectPct: { fontSize: 13, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
 
   // Plans
   planCard: {
@@ -882,20 +882,20 @@ const styles = {
     alignItems: "center", width: "100%", boxSizing: "border-box", marginBottom: 8,
   },
   planInfo: { display: "flex", flexDirection: "column", gap: 2 },
-  planType: { fontSize: 14, color: COLORS.textLight, fontFamily: "sans-serif", fontWeight: "600" },
-  planDetail: { fontSize: 11, color: COLORS.textDim, fontFamily: "sans-serif" },
+  planType: { fontSize: 14, color: COLORS.textLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontWeight: "600" },
+  planDetail: { fontSize: 11, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
   statusBadge: {
-    fontSize: 11, fontFamily: "sans-serif", fontWeight: "600",
+    fontSize: 11, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontWeight: "600",
     border: "1px solid", borderRadius: 8, padding: "2px 8px", alignSelf: "flex-start",
   },
   deactivateBtn: {
     background: "transparent", border: `1px solid ${COLORS.danger}`, borderRadius: 8,
-    color: COLORS.danger, fontSize: 11, fontFamily: "sans-serif", cursor: "pointer",
+    color: COLORS.danger, fontSize: 11, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", cursor: "pointer",
     padding: "4px 10px", whiteSpace: "nowrap",
   },
   deleteBtn: {
     background: "transparent", border: `1px solid ${COLORS.textDarkest}`, borderRadius: 8,
-    color: COLORS.textDarkest, fontSize: 11, fontFamily: "sans-serif", cursor: "pointer",
+    color: COLORS.textDarkest, fontSize: 11, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", cursor: "pointer",
     padding: "4px 10px", whiteSpace: "nowrap",
   },
 
@@ -904,30 +904,30 @@ const styles = {
   select: {
     width: "100%", padding: "10px 14px", background: COLORS.card,
     border: `1px solid ${COLORS.border}`, borderRadius: 10, color: COLORS.text,
-    fontSize: 13, fontFamily: "sans-serif", outline: "none",
+    fontSize: 13, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", outline: "none",
     appearance: "none", WebkitAppearance: "none",
   },
   fieldLabel: {
-    fontSize: 12, color: COLORS.textDim, fontFamily: "sans-serif", fontWeight: "600",
+    fontSize: 12, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontWeight: "600",
     marginBottom: -4, textTransform: "uppercase", letterSpacing: "0.05em",
   },
   targetRow: {
     display: "flex", alignItems: "center", gap: 10,
   },
-  targetLabel: { fontSize: 13, color: COLORS.textDim, fontFamily: "sans-serif" },
+  targetLabel: { fontSize: 13, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif" },
   checkboxLabel: {
-    fontSize: 13, color: COLORS.textDim, fontFamily: "sans-serif",
+    fontSize: 13, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
     display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
   },
   checkbox: { accentColor: COLORS.accent },
   numberInput: {
     width: 80, padding: "8px 12px", background: COLORS.card,
     border: `1px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.text,
-    fontSize: 14, fontFamily: "sans-serif", outline: "none", textAlign: "center",
+    fontSize: 14, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", outline: "none", textAlign: "center",
   },
   addBtn: {
     background: COLORS.accent, color: "white", border: "none", borderRadius: 10,
     padding: "10px", fontSize: 13, fontWeight: "600", cursor: "pointer",
-    fontFamily: "sans-serif",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
 };

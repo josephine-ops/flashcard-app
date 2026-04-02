@@ -188,7 +188,7 @@ const styles = {
     justifyContent: "center", padding: "60px 0",
   },
   loadingText: {
-    color: COLORS.textMuted, marginTop: 16, fontFamily: "monospace", fontSize: 13,
+    color: COLORS.textMuted, marginTop: 16, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontSize: 13,
   },
   emptyContainer: {
     display: "flex", flexDirection: "column", alignItems: "center",
@@ -197,10 +197,10 @@ const styles = {
   emptyIcon: { fontSize: 40, marginBottom: 12 },
   emptyTitle: {
     fontSize: 18, fontWeight: "bold", color: COLORS.textLight, margin: "0 0 6px",
-    fontFamily: "sans-serif",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   emptySubtitle: {
-    color: COLORS.textDim, fontSize: 13, fontFamily: "sans-serif", margin: 0,
+    color: COLORS.textDim, fontSize: 13, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", margin: 0,
   },
   planList: {
     display: "flex", flexDirection: "column", gap: 12, width: "100%",
@@ -217,17 +217,17 @@ const styles = {
     flex: 1, display: "flex", flexDirection: "column", gap: 2,
   },
   planTitle: {
-    fontSize: 14, fontWeight: "600", color: COLORS.textLight, fontFamily: "sans-serif",
+    fontSize: 14, fontWeight: "600", color: COLORS.textLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   planDesc: {
-    fontSize: 12, color: COLORS.textDim, fontFamily: "sans-serif",
+    fontSize: 12, color: COLORS.textDim, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   planPct: {
-    fontSize: 18, fontWeight: "bold", color: COLORS.accentLight, fontFamily: "sans-serif",
+    fontSize: 18, fontWeight: "bold", color: COLORS.accentLight, fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
   },
   completeBadge: {
     alignSelf: "flex-start", fontSize: 11, color: COLORS.success,
-    fontFamily: "sans-serif", fontWeight: "600", background: "#052e16",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", fontWeight: "600", background: "#dcfce7",
     padding: "2px 8px", borderRadius: 8,
   },
 };
