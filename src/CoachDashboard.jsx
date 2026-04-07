@@ -55,6 +55,15 @@ export default function CoachDashboard({ session, profile, onLogout }) {
   const [planNoTarget, setPlanNoTarget] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
 
+  // Quiz analytics (student detail)
+  const [studentQuizAttempts, setStudentQuizAttempts] = useState([]);
+
+  // Quiz management
+  const [showQuizMgmt, setShowQuizMgmt] = useState(false);
+  const [quizSets, setQuizSets] = useState([]); // [{subject, section, type, count}]
+  const [quizReleases, setQuizReleases] = useState([]); // [{id, subject, section, type}]
+  const [quizLoading, setQuizLoading] = useState(false);
+
   // Fetch student list
   useEffect(() => {
     fetchStudents();
@@ -243,6 +252,7 @@ export default function CoachDashboard({ session, profile, onLogout }) {
   async function selectStudent(student) {
     setSelectedStudent(student);
     setPlanStatuses({});
+    setStudentQuizAttempts([]);
     const { data } = await supabase
       .from("study_plans")
       .select("*")
@@ -253,6 +263,15 @@ export default function CoachDashboard({ session, profile, onLogout }) {
     if (data && data.length > 0) {
       computePlanStatuses(data, student.student_id);
     }
+    // Fetch quiz attempts
+    const { data: attempts } = await supabase
+      .from("quiz_attempts")
+      .select("*")
+      .eq("user_id", student.student_id)
+      .not("ended_at", "is", null)
+      .order("started_at", { ascending: false })
+      .limit(50);
+    setStudentQuizAttempts(attempts || []);
   }
 
   async function fetchTopicsForSubject(subj) {
@@ -383,6 +402,85 @@ export default function CoachDashboard({ session, profile, onLogout }) {
   async function deletePlan(planId) {
     await supabase.from("study_plans").delete().eq("id", planId);
     setPlans((prev) => prev.filter((p) => p.id !== planId));
+  }
+
+  // Quiz management
+  async function fetchQuizSets() {
+    setQuizLoading(true);
+    // Get all questions to compute distinct sets with counts
+    const allQuestions = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data } = await supabase
+        .from("quiz_questions")
+        .select("subject, section, type")
+        .range(from, from + pageSize - 1);
+      if (!data || data.length === 0) break;
+      allQuestions.push(...data);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+
+    // Deduplicate into sets with counts
+    const map = {};
+    for (const q of allQuestions) {
+      const key = `${q.subject}|||${q.section}|||${q.type}`;
+      if (!map[key]) map[key] = { subject: q.subject, section: q.section, type: q.type, count: 0 };
+      map[key].count++;
+    }
+    setQuizSets(Object.values(map).sort((a, b) =>
+      a.subject.localeCompare(b.subject) || a.section.localeCompare(b.section) || a.type.localeCompare(b.type)
+    ));
+
+    // Get existing releases
+    const { data: rels } = await supabase
+      .from("quiz_releases")
+      .select("id, subject, section, type")
+      .eq("coach_id", session.user.id);
+    setQuizReleases(rels || []);
+    setQuizLoading(false);
+  }
+
+  function isReleased(subject, section, type) {
+    return quizReleases.some(r => r.subject === subject && r.section === section && r.type === type);
+  }
+
+  async function toggleRelease(subject, section, type) {
+    const existing = quizReleases.find(r => r.subject === subject && r.section === section && r.type === type);
+    if (existing) {
+      await supabase.from("quiz_releases").delete().eq("id", existing.id);
+      setQuizReleases(prev => prev.filter(r => r.id !== existing.id));
+    } else {
+      const { data } = await supabase
+        .from("quiz_releases")
+        .insert({ coach_id: session.user.id, subject, section, type })
+        .select()
+        .single();
+      if (data) setQuizReleases(prev => [...prev, data]);
+    }
+  }
+
+  async function releaseAllForSubject(subject) {
+    const setsForSubj = quizSets.filter(s => s.subject === subject);
+    for (const s of setsForSubj) {
+      if (!isReleased(s.subject, s.section, s.type)) {
+        const { data } = await supabase
+          .from("quiz_releases")
+          .insert({ coach_id: session.user.id, subject: s.subject, section: s.section, type: s.type })
+          .select()
+          .single();
+        if (data) setQuizReleases(prev => [...prev, data]);
+      }
+    }
+  }
+
+  async function lockAllForSubject(subject) {
+    const toRemove = quizReleases.filter(r => r.subject === subject);
+    for (const r of toRemove) {
+      await supabase.from("quiz_releases").delete().eq("id", r.id);
+    }
+    setQuizReleases(prev => prev.filter(r => r.subject !== subject));
   }
 
   // Loading
@@ -571,6 +669,57 @@ export default function CoachDashboard({ session, profile, onLogout }) {
             </button>
           </form>
 
+          {/* Quiz Performance */}
+          <h2 style={styles.sectionTitle}>Quiz Performance</h2>
+          {studentQuizAttempts.length === 0 ? (
+            <p style={styles.emptyText}>No completed quizzes</p>
+          ) : (() => {
+            const bySubject = {};
+            for (const a of studentQuizAttempts) {
+              if (!bySubject[a.subject]) bySubject[a.subject] = [];
+              bySubject[a.subject].push(a);
+            }
+            return Object.entries(bySubject).map(([subj, attempts]) => {
+              const avg = Math.round(attempts.reduce((s, a) => s + (a.score_percent || 0), 0) / attempts.length);
+              const best = Math.round(Math.max(...attempts.map(a => a.score_percent || 0)));
+              const recent = attempts[0];
+              return (
+                <div key={subj} style={{ width: "100%", marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: COLORS.text }}>{subj}</span>
+                    <span style={{ fontSize: 12, color: COLORS.textDim }}>
+                      Avg: {avg}% · Best: {best}% · {attempts.length} attempt{attempts.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  {attempts.slice(0, 5).map(a => {
+                    const date = new Date(a.started_at);
+                    const dateStr = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+                    const pct = Math.round(a.score_percent || 0);
+                    const pctColor = pct >= 80 ? COLORS.success : pct >= 60 ? COLORS.warning : COLORS.danger;
+                    return (
+                      <div key={a.id} style={styles.quizAttemptRow}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, color: COLORS.textLight, fontWeight: 500 }}>
+                            {a.section} · {a.type}
+                          </div>
+                          <div style={{ fontSize: 11, color: COLORS.textDim }}>
+                            {dateStr} · {a.mode} · {a.correct_count}/{a.total_questions}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: pctColor }}>{pct}%</span>
+                      </div>
+                    );
+                  })}
+                  {attempts.length > 5 && (
+                    <p style={{ fontSize: 12, color: COLORS.textDim, textAlign: "center", margin: "4px 0 0" }}>
+                      +{attempts.length - 5} more
+                    </p>
+                  )}
+                </div>
+              );
+            });
+          })()}
+
           {/* Inactive plans */}
           {plans.filter((p) => !p.active).length > 0 && (
             <>
@@ -627,6 +776,83 @@ export default function CoachDashboard({ session, profile, onLogout }) {
           </button>
         </form>
         {inviteMsg && <p style={styles.inviteMsg}>{inviteMsg}</p>}
+
+        {/* Quiz Management */}
+        <button
+          style={styles.quizMgmtToggle}
+          onClick={() => {
+            setShowQuizMgmt(!showQuizMgmt);
+            if (!showQuizMgmt && quizSets.length === 0) fetchQuizSets();
+          }}
+        >
+          {showQuizMgmt ? "▾" : "▸"} Quiz Management
+          {quizReleases.length > 0 && (
+            <span style={styles.releasedCount}>{quizReleases.length} released</span>
+          )}
+        </button>
+
+        {showQuizMgmt && (
+          <div style={styles.quizMgmtSection}>
+            {quizLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
+                <div style={commonStyles.spinner} />
+              </div>
+            ) : quizSets.length === 0 ? (
+              <p style={styles.emptyText}>No quiz questions found in the database.</p>
+            ) : (
+              (() => {
+                const bySubject = {};
+                for (const s of quizSets) {
+                  if (!bySubject[s.subject]) bySubject[s.subject] = [];
+                  bySubject[s.subject].push(s);
+                }
+                return Object.entries(bySubject).map(([subj, sets]) => {
+                  const allReleased = sets.every(s => isReleased(s.subject, s.section, s.type));
+                  const noneReleased = sets.every(s => !isReleased(s.subject, s.section, s.type));
+                  return (
+                    <div key={subj} style={{ marginBottom: 16 }}>
+                      <div style={styles.quizSubjectHeader}>
+                        <span style={{ fontWeight: 600, fontSize: 14, color: COLORS.text }}>{subj}</span>
+                        <button
+                          style={styles.bulkBtn}
+                          onClick={() => allReleased ? lockAllForSubject(subj) : releaseAllForSubject(subj)}
+                        >
+                          {allReleased ? "Lock All" : "Release All"}
+                        </button>
+                      </div>
+                      {sets.map((s, i) => {
+                        const released = isReleased(s.subject, s.section, s.type);
+                        return (
+                          <div key={i} style={styles.quizSetRow}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 13, color: COLORS.textLight, fontWeight: 500 }}>
+                                {s.section}
+                              </div>
+                              <div style={{ fontSize: 11, color: COLORS.textDim }}>
+                                {s.type} · {s.count} Q
+                              </div>
+                            </div>
+                            <button
+                              style={{
+                                ...styles.releaseBtn,
+                                background: released ? COLORS.success : "transparent",
+                                color: released ? "white" : COLORS.textDim,
+                                border: released ? "none" : `1px solid ${COLORS.border}`,
+                              }}
+                              onClick={() => toggleRelease(s.subject, s.section, s.type)}
+                            >
+                              {released ? "Released" : "Locked"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                });
+              })()
+            )}
+          </div>
+        )}
 
         {/* Search */}
         {students.length > 3 && (
@@ -930,5 +1156,45 @@ const styles = {
     background: COLORS.accent, color: "white", border: "none", borderRadius: 10,
     padding: "10px", fontSize: 13, fontWeight: "600", cursor: "pointer",
     fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
+  },
+
+  // Quiz management
+  quizMgmtToggle: {
+    background: "transparent", border: `1px solid ${COLORS.border}`, borderRadius: 10,
+    padding: "10px 14px", fontSize: 14, fontWeight: "600", cursor: "pointer",
+    fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif", color: COLORS.text,
+    width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 8,
+    marginBottom: 12,
+  },
+  releasedCount: {
+    fontSize: 11, color: COLORS.success, fontWeight: 600,
+    background: "#f0fdf4", padding: "2px 8px", borderRadius: 8, marginLeft: "auto",
+  },
+  quizMgmtSection: {
+    width: "100%", marginBottom: 16,
+  },
+  quizSubjectHeader: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    marginBottom: 8, padding: "0 2px",
+  },
+  quizSetRow: {
+    background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 10,
+    padding: "10px 14px", display: "flex", alignItems: "center", gap: 10,
+    marginBottom: 6,
+  },
+  releaseBtn: {
+    borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 600,
+    cursor: "pointer", fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
+    whiteSpace: "nowrap",
+  },
+  bulkBtn: {
+    background: COLORS.accentBg, color: COLORS.accentLight, border: "none",
+    borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 600,
+    cursor: "pointer", fontFamily: "'Inter', 'Open Sans', Helvetica, Arial, sans-serif",
+  },
+  quizAttemptRow: {
+    background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 10,
+    padding: "10px 14px", display: "flex", alignItems: "center", gap: 10,
+    marginBottom: 6, width: "100%", boxSizing: "border-box",
   },
 };

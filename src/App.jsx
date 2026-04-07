@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import CoachDashboard from "./CoachDashboard";
 import StudyPlanTab from "./StudyPlanTab";
 import StatsTab from "./StatsTab";
+import QuizTab from "./QuizTab";
 import logo from "./assets/DemiDec Logo.png";
 
 const RATINGS = [
@@ -814,9 +815,14 @@ export default function App() {
               My Plans
             </button>
             <button
+              style={{ ...styles.tab, ...(homeTab === "quizzes" ? styles.tabActive : {}) }}
+              onClick={() => setHomeTab("quizzes")}>
+              Quizzes
+            </button>
+            <button
               style={{ ...styles.tab, ...(homeTab === "stats" ? styles.tabActive : {}) }}
               onClick={() => setHomeTab("stats")}>
-              My Stats
+              Flashcards
             </button>
           </div>
 
@@ -880,6 +886,8 @@ export default function App() {
             </>
           ) : homeTab === "plans" ? (
             <StudyPlanTab session={session} />
+          ) : homeTab === "quizzes" ? (
+            <QuizTab session={session} />
           ) : (
             <StatsTab session={session} />
           )}
