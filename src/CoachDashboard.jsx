@@ -438,7 +438,22 @@ export default function CoachDashboard({ session, profile, onLogout }) {
       .from("quiz_releases")
       .select("id, subject, section, type")
       .eq("coach_id", session.user.id);
-    setQuizReleases(rels || []);
+
+    // Filter out orphaned releases that no longer match any quiz set
+    const validSets = Object.values(map);
+    const validRels = (rels || []).filter(r =>
+      validSets.some(s => s.subject === r.subject && s.section === r.section && s.type === r.type)
+    );
+
+    // Clean up orphaned rows from DB
+    const orphaned = (rels || []).filter(r =>
+      !validSets.some(s => s.subject === r.subject && s.section === r.section && s.type === r.type)
+    );
+    for (const o of orphaned) {
+      supabase.from("quiz_releases").delete().eq("id", o.id).then(() => {});
+    }
+
+    setQuizReleases(validRels);
     setQuizLoading(false);
   }
 
